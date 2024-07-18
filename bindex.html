@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Budgeting Adventure</title>
+  <style>
+    #container {
+      max-width: 500px;
+      margin: 0 auto;
+      text-align: center;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
+    
+    h1 {
+      font-size: 28px;
+      color: #333;
+      margin-bottom: 30px;
+    }
+    
+    #scenario {
+      font-size: 28px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    
+    .option-button {
+      padding: 10px 20px;
+      cursor: pointer;
+      background-color: #4285F4;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      transition: background-color 0.3s;
+    }
+    
+    .option-button:hover {
+      background-color: #3367D6;
+    }
+    
+    #result {
+      font-weight: bold;
+      margin-top: 20px;
+      color: #333;
+    }
+    
+    #timer {
+      font-weight: bold;
+      margin-top: 20px;
+      color: #333;
+    }
+    
+    #score {
+      font-weight: bold;
+      margin-top: 20px;
+      color: #333;
+    }
+    
+    #game-over {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 20px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h1>Budgeting Adventure</h1>
+    <div id="scenario"></div>
+    <div id="options">
+      <button class="option-button" onclick="chooseOption(0)"></button>
+      <button class="option-button" onclick="chooseOption(1)"></button>
+      <button class="option-button" onclick="chooseOption(2)"></button>
+    </div>
+    <div id="result"></div>
+    <div id="timer"></div>
+    <div id="score">Score: 0</div>
+    <div id="game-over"></div>
+  </div>
+
+  <script>
+    var score = 0; // Player score
+    var currentScenarioIndex = 0; // Current scenario index
+    var timerSeconds = 10; // Time per question in seconds
+    var timerInterval;
+    var scenarios = [
+      {
+        description: "You received your paycheck. How much will you allocate for your savings?",
+        options: [
+          { text: "10%", result: "Great! Saving a portion of your income is a smart financial move.", score: 1 },
+          { text: "25%", result: "Awesome! You're off to a good start in building your savings.", score: 2 },
+          { text: "5%", result: "Consider increasing your savings percentage to build a stronger financial foundation.", score: 0 }
+        ]
+      },
+      {
+        description: "Your friend invites you to an expensive dinner. How will you respond?",
+        options: [
+          { text: "Politely decline and suggest a more budget-friendly activity.", result: "Great decision! It's important to stick to your budget and find alternatives.", score: 2 },
+          { text: "Agree to go but suggest splitting the bill.", result: "A reasonable compromise! Sharing the bill can help reduce expenses.", score: 1 },
+          { text: "Accept the invitation and offer to pay for the entire dinner.", result: "While it's generous, it may strain your budget. Consider more cost-effective choices.", score: 0 }
+        ]
+      },
+      {
+        description: "You want to buy a new gadget. How will you approach this purchase?",
+        options: [
+          { text: "Save up and pay in cash to avoid debt.", result: "Smart move! Avoiding debt ensures you won't pay extra in interest.", score: 2 },
+          { text: "Use a credit card and pay in installments.", result: "Be cautious! Make sure you can comfortably pay off the installments without incurring high interest charges.", score: 1 },
+          { text: "Borrow money to buy it immediately.", result: "Borrowing money can lead to interest charges and potential debt problems. Consider saving up instead.", score: 0 }
+        ]
+      },
+      {
+        description: "You receive a promotion and a pay raise. How will you adjust your budget?",
+        options: [
+          { text: "Increase savings and investments.", result: "Excellent choice! Boosting your savings and investments will help secure your financial future.", score: 2 },
+          { text: "Upgrade your lifestyle and spend more.", result: "Be mindful of lifestyle inflation. Consider saving and investing the extra income instead of increasing expenses.", score: 1 },
+          { text: "Maintain your current budget and save the rest.", result: "Prudent decision! Sticking to your current budget and saving the extra income will help you achieve your financial goals.", score: 2 }
+        ]
+      },
+      {
+        description: "You want to go on a vacation. How will you budget for it?",
+        options: [
+          { text: "Set a budget and save money each month.", result: "Great planning! Setting a budget and saving for your vacation will help you enjoy it without financial stress.", score: 2 },
+          { text: "Use credit cards and pay off the expenses later.", result: "Be cautious with credit card usage. Ensure you can pay off the expenses promptly to avoid interest charges.", score: 1 },
+          { text: "Spend without budgeting and figure it out later.", result: "It's advisable to plan and budget for your vacation expenses to maintain financial stability.", score: 0 }
+        ]
+      },
+      // Additional scenarios
+      {
+        description: "You receive a bonus at work. How will you allocate the extra money?",
+        options: [
+          { text: "Invest a portion and use the rest for debt repayment.", result: "Great strategy! Investing and paying off debts will help you build wealth and financial stability.", score: 2 },
+          { text: "Splurge on a luxury item you've always wanted.", result: "While it's tempting, consider prioritizing long-term financial goals before indulging in luxury items.", score: 0 },
+          { text: "Put all of it into your emergency fund.", result: "Building a robust emergency fund is crucial for financial security. Good job!", score: 2 }
+        ]
+      },
+      {
+        description: "You come across a limited-time sale. How will you approach it?",
+        options: [
+          { text: "Evaluate the item's value and check your budget before making a decision.", result: "Smart move! Considering the item's value and your budget ensures a responsible purchase.", score: 2 },
+          { text: "Buy it impulsively before the sale ends.", result: "Impulsive buying can lead to regret and strain your budget. Take a moment to evaluate the purchase.", score: 0 },
+          { text: "Wait for the next sale and re-evaluate your need for the item.", result: "Waiting and re-evaluating helps you make more informed purchase decisions. Good thinking!", score: 1 }
+        ]
+      },
+      {
+        description: "You want to improve your skills. How will you budget for educational resources?",
+        options: [
+          { text: "Research affordable resources and set aside a budget for education.", result: "Great plan! Allocating a budget for educational resources ensures you invest wisely in your self-improvement.", score: 2 },
+          { text: "Invest in expensive courses without considering their long-term value.", result: "Expensive courses can be valuable, but it's important to weigh the cost against the potential benefits.", score: 1 },
+          { text: "Avoid spending on educational resources altogether.", result: "Investing in your skills and knowledge is essential for personal and professional growth. Consider budgeting for it.", score: 0 }
+        ]
+      },
+      {
+        description: "You receive a windfall of money unexpectedly. How will you use it?",
+        options: [
+          { text: "Prioritize paying off debts and building an emergency fund.", result: "Excellent decision! Clearing debts and building an emergency fund will enhance your financial security.", score: 2 },
+          { text: "Spend it on a lavish vacation or luxury items.", result: "While it's tempting, consider balancing your desires with long-term financial goals.", score: 1 },
+          { text: "Invest a portion and allocate the rest for long-term financial goals.", result: "Smart move! Investing and allocating for long-term goals will help you grow your wealth.", score: 2 }
+        ]
+      },
+    ];
+
+    function displayScenario() {
+      var scenarioElement = document.getElementById("scenario");
+      var scenario = scenarios[currentScenarioIndex];
+      scenarioElement.innerText = scenario.description;
+
+      var optionsElement = document.getElementById("options");
+      var buttons = optionsElement.getElementsByClassName("option-button");
+
+      for (var i = 0; i < buttons.length; i++) {
+        var button = buttons[i];
+        if (i < scenario.options.length) {
+          button.style.display = "inline";
+          button.innerText = scenario.options[i].text;
+        } else {
+          button.style.display = "none";
+        }
+      }
+
+      startTimer();
+    }
+
+    function chooseOption(optionIndex) {
+      stopTimer();
+
+      var scenario = scenarios[currentScenarioIndex];
+      var chosenOption = scenario.options[optionIndex];
+
+      score += chosenOption.score;
+
+      var resultElement = document.getElementById("result");
+      resultElement.innerText = chosenOption.result;
+
+      var scoreElement = document.getElementById("score");
+      scoreElement.innerText = "Score: " + score;
+
+      currentScenarioIndex++;
+      if (currentScenarioIndex >= scenarios.length) {
+        endGame();
+      } else {
+        setTimeout(displayScenario, 2000); // Wait for 2 seconds before displaying the next scenario
+      }
+    }
+
+    function endGame() {
+      var scenarioElement = document.getElementById("scenario");
+      scenarioElement.style.display = "none";
+
+      var optionsElement = document.getElementById("options");
+      optionsElement.style.display = "none";
+
+      var resultElement = document.getElementById("result");
+      resultElement.style.display = "none";
+
+      var scoreElement = document.getElementById("score");
+      scoreElement.style.display = "none";
+
+      var timerElement = document.getElementById("timer");
+      timerElement.style.display = "none";
+
+      var gameOverElement = document.getElementById("game-over");
+      gameOverElement.innerText = "Congratulations! You completed the game.";
+      var finalScoreElement = document.createElement("div");
+      finalScoreElement.innerText = "Final Score: " + score;
+      gameOverElement.appendChild(finalScoreElement);
+    }
+
+    function startTimer() {
+      var timeLeft = timerSeconds;
+      var timerElement = document.getElementById("timer");
+      timerElement.innerText = "Time Left: " + timeLeft;
+
+      timerInterval = setInterval(function() {
+        timeLeft--;
+        timerElement.innerText = "Time Left: " + timeLeft;
+        if (timeLeft <= 0) {
+          stopTimer();
+          chooseOption(0); // Automatically choose the first option when time runs out
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
+
+    displayScenario();
+  </script>
+</body>
+</html>
